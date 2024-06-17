@@ -1,84 +1,102 @@
+export type CallbackID = string;
 export interface BarcodeScannerPlugin {
-  prepare(): Promise<void>;
+  prepare(options?: ScanOptions): Promise<void>;
   hideBackground(): Promise<void>;
   showBackground(): Promise<void>;
   startScan(options?: ScanOptions): Promise<ScanResult>;
+  startScanning(options?: ScanOptions, callback?: (result: ScanResult, err?: any) => void): Promise<CallbackID>;
+  pauseScanning(): Promise<void>;
+  resumeScanning(): Promise<void>;
   stopScan(options?: StopScanOptions): Promise<void>;
-  checkPermission(
-    options?: CheckPermissionOptions,
-  ): Promise<CheckPermissionResult>;
+  checkPermission(options?: CheckPermissionOptions): Promise<CheckPermissionResult>;
   openAppSettings(): Promise<void>;
+  enableTorch(): Promise<void>;
+  disableTorch(): Promise<void>;
+  toggleTorch(): Promise<void>;
+  getTorchState(): Promise<TorchStateResult>;
 }
 
-export enum SupportedFormat {
+const _SupportedFormat = {
   // BEGIN 1D Product
   /**
    * Android only, UPC_A is part of EAN_13 according to Apple docs
    */
-  UPC_A = 'UPC_A',
+  UPC_A: 'UPC_A',
 
-  UPC_E = 'UPC_E',
+  UPC_E: 'UPC_E',
 
   /**
    * Android only
    */
-  UPC_EAN_EXTENSION = 'UPC_EAN_EXTENSION',
+  UPC_EAN_EXTENSION: 'UPC_EAN_EXTENSION',
 
-  EAN_8 = 'EAN_8',
+  EAN_8: 'EAN_8',
 
-  EAN_13 = 'EAN_13',
+  EAN_13: 'EAN_13',
   // END 1D Product
 
   // BEGIN 1D Industrial
-  CODE_39 = 'CODE_39',
+  CODE_39: 'CODE_39',
 
   /**
    * iOS only
    */
-  CODE_39_MOD_43 = 'CODE_39_MOD_43',
+  CODE_39_MOD_43: 'CODE_39_MOD_43',
 
-  CODE_93 = 'CODE_93',
+  CODE_93: 'CODE_93',
 
-  CODE_128 = 'CODE_128',
+  CODE_128: 'CODE_128',
 
   /**
    * Android only
    */
-  CODABAR = 'CODABAR',
+  CODABAR: 'CODABAR',
 
-  ITF = 'ITF',
+  ITF: 'ITF',
 
   /**
    * iOS only
    */
-  ITF_14 = 'ITF_14',
+  ITF_14: 'ITF_14',
   // END 1D Industrial
 
   // BEGIN 2D
-  AZTEC = 'AZTEC',
+  AZTEC: 'AZTEC',
 
-  DATA_MATRIX = 'DATA_MATRIX',
-
-  /**
-   * Android only
-   */
-  MAXICODE = 'MAXICODE',
-
-  PDF_417 = 'PDF_417',
-
-  QR_CODE = 'QR_CODE',
+  DATA_MATRIX: 'DATA_MATRIX',
 
   /**
    * Android only
    */
-  RSS_14 = 'RSS_14',
+  MAXICODE: 'MAXICODE',
+
+  PDF_417: 'PDF_417',
+
+  QR_CODE: 'QR_CODE',
 
   /**
    * Android only
    */
-  RSS_EXPANDED = 'RSS_EXPANDED',
+  RSS_14: 'RSS_14',
+
+  /**
+   * Android only
+   */
+  RSS_EXPANDED: 'RSS_EXPANDED',
   // END 2D
-}
+} as const;
+
+export const SupportedFormat = _SupportedFormat satisfies {
+  [k in SupportedFormat]: k;
+};
+export type SupportedFormat = typeof _SupportedFormat[keyof typeof _SupportedFormat];
+
+export const CameraDirection = {
+  FRONT: 'front',
+  BACK: 'back',
+} as const;
+
+export type CameraDirection = typeof CameraDirection[keyof typeof CameraDirection];
 
 export interface ScanOptions {
   /**
@@ -88,6 +106,12 @@ export interface ScanOptions {
    * @since 1.2.0
    */
   targetedFormats?: SupportedFormat[];
+  /**
+   * This parameter can be used to set the camera direction.
+   *
+   * @since 2.1.0
+   */
+  cameraDirection?: CameraDirection;
 }
 
 export interface StopScanOptions {
@@ -102,7 +126,9 @@ export interface StopScanOptions {
   resolveScan?: boolean;
 }
 
-export interface ScanResult {
+export type ScanResult = IScanResultWithContent | IScanResultWithoutContent;
+
+export interface IScanResultWithContent {
   /**
    * This indicates whether or not the scan resulted in readable content.
    * When stopping the scan with `resolveScan` set to `true`, for example,
@@ -110,14 +136,46 @@ export interface ScanResult {
    *
    * @since 1.0.0
    */
-  hasContent: boolean;
+  hasContent: true;
 
   /**
    * This holds the content of the barcode if available.
    *
    * @since 1.0.0
    */
-  content?: string;
+  content: string;
+
+  /**
+   * This returns format of scan result.
+   *
+   * @since 2.1.0
+   */
+  format: string;
+}
+
+export interface IScanResultWithoutContent {
+  /**
+   * This indicates whether or not the scan resulted in readable content.
+   * When stopping the scan with `resolveScan` set to `true`, for example,
+   * this parameter is set to `false`, because no actual content was scanned.
+   *
+   * @since 1.0.0
+   */
+  hasContent: false;
+
+  /**
+   * This holds the content of the barcode if available.
+   *
+   * @since 1.0.0
+   */
+  content: undefined;
+
+  /**
+   * This returns format of scan result.
+   *
+   * @since 2.1.0
+   */
+  format: undefined;
 }
 
 export interface CheckPermissionOptions {
@@ -176,4 +234,11 @@ export interface CheckPermissionResult {
    * @since 1.0.0
    */
   unknown?: boolean;
+}
+
+export interface TorchStateResult {
+  /**
+   * Whether or not the torch is currently enabled.
+   */
+  isEnabled: boolean;
 }

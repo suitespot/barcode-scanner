@@ -1,3 +1,11 @@
+# DEPRECATED
+
+This package is deprecated in favor of [`@capacitor-mlkit/barcode-scanning`](https://github.com/capawesome-team/capacitor-mlkit/tree/main/packages/barcode-scanning).
+`@capacitor-mlkit/barcode-scanning` has multiple features that are missing in this project, especially a prebuilt UI. 
+Not having an out of the box solution was confusing for most users and caused a lot of issues.
+Additionally, v5 of this plugin intended to switch to `ml-kit` and this brings additional problems if you want to use multiple parts of `ml-kit` in the same application, which is solved by `@capacitor-mlkit/barcode-scanning` as well.
+
+
 <p align="center"><br><img src="https://user-images.githubusercontent.com/236501/85893648-1c92e880-b7a8-11ea-926d-95355b8175c7.png" width="128" height="128" /></p>
 <h3 align="center">Barcode Scanner</h3>
 <p align="center"><strong><code>@capacitor-community/barcode-scanner</code></strong></p>
@@ -6,8 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/maintenance/yes/2021?style=flat-square" />
-  <!-- <a href="https://github.com/DutchConcepts/capacitor-barcode-scanner/actions?query=workflow%3A%22CI%22"><img src="https://img.shields.io/github/workflow/status/dutchconcepts/capacitor-barcode-scanner/CI?style=flat-square" /></a> -->
+  <img src="https://img.shields.io/maintenance/no/2023?style=flat-square" />
   <a href="https://www.npmjs.com/package/@capacitor-community/barcode-scanner"><img src="https://img.shields.io/npm/l/@capacitor-community/barcode-scanner?style=flat-square" /></a>
 <br>
   <a href="https://www.npmjs.com/package/@capacitor-community/barcode-scanner"><img src="https://img.shields.io/npm/dw/@capacitor-community/barcode-scanner?style=flat-square" /></a>
@@ -27,9 +34,10 @@
 
 ## Maintainers
 
-| Maintainer | GitHub                                | Social |
+| Maintainer | GitHub                                | Active |
 | ---------- | ------------------------------------- | ------ |
-| tafelnl    | [tafelnl](https://github.com/tafelnl) |        |
+| thegnuu    | [thegnuu](https://github.com/thegnuu) | no     |
+| tafelnl    | [tafelnl](https://github.com/tafelnl) | no     |
 
 ## About
 
@@ -39,7 +47,15 @@ On **iOS** this library makes use of Apple's own `AVFoundation`. This means **[t
 
 On **Android** this library uses [`zxing-android-embedded`](https://github.com/journeyapps/zxing-android-embedded) which uses [`zxing`](https://github.com/zxing/zxing) under the hood. That means **[this list of barcodes](https://github.com/zxing/zxing/#supported-formats)** is supported.
 
+On **Web** this library uses [`zxing/browser`](https://github.com/zxing-js/browser). That means **[this list of barcodes](https://github.com/zxing/zxing/#supported-formats)** is supported. The web implementation is currently in development, there might be issues and not all features are currently supported!
+
 ### Note on supported Capacitor versions
+
+`v5.x.x-beta.x` pre-release based on ML-Kit that supports Capacitor `v5.x`
+
+`v4.x` supports Capacitor `v5.x`
+
+`v3.x` supports Capacitor `v4.x`
 
 `v2.x` supports Capacitor `v3.x`
 
@@ -109,7 +125,7 @@ Within your `AndroidManifest.xml` file, change the following:
 
 ## Usage
 
-The complete API reference can be found [here](./API_REFERENCE.md).
+The complete API reference can be found [here](./src/definitions.ts).
 
 Scanning a (QR) barcode can be as simple as:
 
@@ -117,7 +133,13 @@ Scanning a (QR) barcode can be as simple as:
 import { BarcodeScanner } from '@capacitor-community/barcode-scanner';
 
 const startScan = async () => {
-  BarcodeScanner.hideBackground(); // make background of WebView transparent
+  // Check camera permission
+  // This is just a simple example, check out the better checks below
+  await BarcodeScanner.checkPermission({ force: true });
+
+  // make background of WebView transparent
+  // note: if you are using ionic this might not be enough, check below
+  BarcodeScanner.hideBackground();
 
   const result = await BarcodeScanner.startScan(); // start scanning and wait for a result
 
@@ -130,11 +152,11 @@ const startScan = async () => {
 
 ### Opacity of the WebView
 
-Because of the fact that the Scanner View will be rendered behind the WebView, you will have to call `hideBackground()` to make the WebView and the `<html>` element transparent. Every other element that needs transparency, you will have to handle yourself.
+`hideBackground()` will make the `<html>` element transparent by adding `background: 'transparent';` to the `style` attribute.
 
-The `<html>` element is made transparent by adding `background: 'transparent';` to the `style=""` attribute. So in theory it is possible that this is overwritten by some CSS property in your setup. Because this plugin does not aim to fix every single scenario out there, you will have to think of a workaround for this yourself, if this applies to you (probably not).
+If you are using Ionic you need to set some css variables as well, check [**here**](#ionic-css-variables)
 
-If you still cannot see the camera view, check if any other elements are blocking it. For more info on this see [here](#the-scanner-view-does-not-show-up).
+If you still cannot see the camera view, check [**here**](#the-scanner-view-does-not-show-up)
 
 ### Stopping a scan
 
@@ -291,9 +313,7 @@ const didUserGrantPermission = async () => {
     // user has not been requested this permission before
     // it is advised to show the user some sort of prompt
     // this way you will not waste your only chance to ask for the permission
-    const c = confirm(
-      'We need your permission to use your camera to be able to scan barcodes',
-    );
+    const c = confirm('We need your permission to use your camera to be able to scan barcodes');
     if (!c) {
       return false;
     }
@@ -338,9 +358,7 @@ const checkPermission = async () => {
   if (status.denied) {
     // the user denied permission for good
     // redirect user to app settings if they want to grant it anyway
-    const c = confirm(
-      'If you want to grant permission for using your camera, enable it in the app settings.',
-    );
+    const c = confirm('If you want to grant permission for using your camera, enable it in the app settings.');
     if (c) {
       BarcodeScanner.openAppSettings();
     }
@@ -488,6 +506,30 @@ The following types are supported:
 
 ## Troubleshooting
 
+### Ionic CSS variables
+
+Ionic will add additional CSS variables which will prevent the scanner from showing up.
+To fix this issue add the following snippet at the end of your global css.
+
+```css
+body.scanner-active {
+  --background: transparent;
+  --ion-background-color: transparent;
+}
+```
+
+Once this is done, you need to add this class to the body before using the scanner.
+
+```typescript
+document.querySelector('body').classList.add('scanner-active');
+```
+
+After your done with your scanning work, you can simply remove this class.
+
+```typescript
+document.querySelector('body').classList.remove('scanner-active');
+```
+
 ### I have a `Error: Plugin BarcodeScanner does not respond to method call` error message on iOS
 
 In Xcode click on `Product` > `Clean Build Folder` and try to build again.
@@ -498,12 +540,51 @@ In Android Studio click `File` > `Sync Project with Gradle Files` and try to bui
 
 ### The scanner view does not show up
 
-First check that the camera permission is granted. If the scanner view does still not appear it is likely that some UI element is blocking it. Check out these issues for more information on how to resolve such an issue: [#7](https://github.com/capacitor-community/barcode-scanner/issues/7#issuecomment-744441148) and [#26](https://github.com/capacitor-community/barcode-scanner/issues/26)
+If you cannot see the scanner in your viewport, please follow these steps:
+
+1. Check if camera permissions are granted properly
+2. Check if the scanner element does appear inside the DOM, somewhere within the `body` tag
+   - [It's not there](#i-do-not-find-the-scanner-in-the-dom)
+3. Check if some DOM elements are rendered on top of the scanner
+   - Search which element is causing the issue [#7](https://github.com/capacitor-community/barcode-scanner/issues/7#issuecomment-744441148)
+   - Play with javascript [#26](https://github.com/capacitor-community/barcode-scanner/issues/26)
+
+### I do not find the scanner in the DOM
+
+This should appear in the DOM when running the `BarcodeScanner.startScan()` method.
+
+```html
+<body>
+  <!-- ... -->
+  <div style="position: absolute; left: 0px; top: -2px; height: 1px; overflow: hidden; visibility: hidden; width: 1px;">
+    <span
+      style="position: absolute; font-size: 300px; width: auto; height: auto; margin: 0px; padding: 0px; font-family: Roboto, Arial, sans-serif;"
+      >BESbswy</span
+    >
+  </div>
+  <!-- ... -->
+</body>
+```
+
+If it does not, it may be a bug due to the component being loaded to deep inside the DOM tree.
+You can try to see if the plugin is working properly by adding the following in your `app.component.ts` file.
+
+```typescript
+BarcodeScanner.hideBackground();
+const result = await BarcodeScanner.startScan();
+```
+
+#### It doesn't appear
+
+It could mean that you have missed a step by the [plugin configuration](#installation).
+
+#### I did the configuration correctly
+
+please [open an issue](https://github.com/capacitor-community/barcode-scanner/issues/new/choose)
 
 ## TODO
 
 A non-exhaustive list of todos:
 
 - Support for switching between cameras
-- Support for toggling the flashlight
 - Support for web
